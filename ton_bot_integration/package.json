@@ -1,0 +1,19 @@
+{
+  "name": "ton_bot_integration",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@orbs-network/ton-access": "^2.3.3",
+    "@ton/core": "^0.59.0",
+    "@ton/crypto": "^3.3.0",
+    "ton": "^13.9.0",
+    "ton-core": "^0.53.0"
+  }
+}
