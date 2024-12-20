@@ -3,7 +3,11 @@ const { Address } = require("ton");
 
 async function getAccountState(endpoint, address, block) {
     try {
-        const response = await fetch(`${endpoint}/getAccount?account=${address}&blockId=${block.seqno}`);
+        // Make sure address is in the correct format
+        const formattedAddress = address.toString();
+        console.log("Querying address:", formattedAddress); // Add this for debugging
+        
+        const response = await fetch(`${endpoint}/address/${formattedAddress}/account`);
         if (!response.ok) {
             throw new Error(`Failed to fetch account state: ${response.statusText}`);
         }
@@ -17,7 +21,7 @@ async function getAccountState(endpoint, address, block) {
 }
 
 (async () => {
-    const endpoint = "https://ton.access.orbs.network/4410c0ff5Bd3F8B62C092Ab4D238bEE463E64410/1/testnet/ton-api-v4";
+    const endpoint = "https://ton.access.orbs.network/4410c0ff5Bd3F8B62C092Ab4D238bEE463E64410/1/mainnet/ton-api-v4";
 
     try {
         console.log("Fetching last block...");
@@ -28,7 +32,7 @@ async function getAccountState(endpoint, address, block) {
         const lastBlock = await lastBlockResponse.json();
         console.log("Last Block:", lastBlock);
 
-        const senderWalletAddress = Address.parseFriendly("EQBbwxC0WnOlXVwC5a8SEwd-_jtg3d3YCt0th_VA4IC9NkDS").address.toString();
+        const senderWalletAddress = Address.parseFriendly("EQBbwxC0WnOlXVwC5a8SEwd-_jtg3d3YCt0th_VA4IC9NkDS").address;
         console.log("Fetching account state...");
         const accountState = await getAccountState(endpoint, senderWalletAddress, lastBlock.last);
         console.log("Account State:", accountState);
@@ -36,4 +40,3 @@ async function getAccountState(endpoint, address, block) {
         console.error("Error:", err);
     }
 })();
-

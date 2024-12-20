@@ -9,10 +9,12 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "type": "module",
   "dependencies": {
     "@orbs-network/ton-access": "^2.3.3",
     "@ton/core": "^0.59.0",
     "@ton/crypto": "^3.3.0",
+    "node-fetch": "^3.3.2",
     "ton": "^13.9.0",
     "ton-core": "^0.53.0"
   }
