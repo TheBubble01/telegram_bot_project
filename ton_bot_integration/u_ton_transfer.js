@@ -21,11 +21,10 @@ async function withRetry(fn, retries = 3, delay = 1000) {
         } catch (err) {
             console.warn(`Retry ${i + 1}/${retries} failed: ${err.message}`);
             if (i < retries - 1) {
-		const backoff = delay * Math.pow(2, i); // Exponential backoff
+                const backoff = delay * Math.pow(2, i); // Exponential backoff
                 await new Promise((resolve) => setTimeout(resolve, backoff));
             } else {
-                //throw err; // Exhausted retries
-		console.log("Transaction is delayed due to network issues. Please try again later.");
+                console.log("Transaction is delayed due to network issues. Please try again later.");
             }
         }
     }
@@ -62,7 +61,7 @@ async function getWalletStateBatch(client, mnemonics) {
 }
 
 // Send TON Transfer
-async function sendTonTransfer(client, mnemonics, recipientAddress, amount) {
+export async function sendTonTransfer(client, mnemonics, recipientAddress, amount) {
     try {
         const keyPair = await mnemonicToPrivateKey(mnemonics);
         const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey });
@@ -85,29 +84,38 @@ async function sendTonTransfer(client, mnemonics, recipientAddress, amount) {
                 })],
             });
             console.log(`Successfully sent ${amount} TON to ${recipientAddress}`);
-	});
+        });
 
-        //console.log(`Successfully sent ${amount} TON to ${recipientAddress}`);
     } catch (err) {
         console.error("Error sending TON transfer:", err);
         throw err;
     }
 }
 
-// Example Usage
+// Initialize the TON Client and Return It
+export function initializeClient(apiKey, endpoint) {
+    return initTonClient(apiKey, endpoint);
+}
+
+// Example Usage (commented out to be triggered externally)
+/*
 (async () => {
     const endpoint = "https://testnet.toncenter.com/api/v2/jsonRPC";
-    const apiKey = "5ba494fc5174eb060fa02740785437c9eac28efd11301eed0136fd8dc997783d";
-    const mnemonics = "spend climb brother enjoy convince speed prosper sight ghost rapid purpose client decide retreat settle stock carpet lunar find exist exact must explain actor".split(" ");
+    const apiKey = "YOUR_API_KEY_HERE";
+    const mnemonics = "YOUR_MNEMONIC_HERE".split(" ");
 
-    const client = initTonClient(apiKey, endpoint);
+    const client = initializeClient(apiKey, endpoint);
+
+    // Dynamically passed values
+    const recipientAddress = "DYNAMIC_WALLET_ADDRESS";
+    const amount = "DYNAMIC_AMOUNT";
 
     // Fetch Wallet State
-    const recipientAddress = "EQBbwxC0WnOlXVwC5a8SEwd-_jtg3d3YCt0th_VA4IC9NkDS";
     const walletState = await getWalletStateBatch(client, mnemonics);
     console.log("Wallet State:", walletState);
 
     // Send Transfer
-    await sendTonTransfer(client, mnemonics, recipientAddress, "0.6");
+    await sendTonTransfer(client, mnemonics, recipientAddress, amount);
 })();
+*/
 

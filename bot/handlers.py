@@ -111,7 +111,7 @@ async def enter_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Call the TON.js script
     try:
         result = subprocess.run(
-            ["node", "ton_transfer.js", sender_private_key, wallet, str(amount)],
+            ["node", "./ton_bot_integration/ton_transfer.js", sender_private_key, wallet, str(amount)],
             capture_output=True,
             text=True,
         )

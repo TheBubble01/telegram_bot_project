@@ -1,0 +1,3 @@
+Toncenter API Key: 5ba494fc5174eb060fa02740785437c9eac28efd11301eed0136fd8dc997783d
+Should check for using multiple APIs at once for load balancing
+Consider using a decentralized endpoint (Ton Access) as backoff.
