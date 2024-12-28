@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 import asyncio
 import requests
 import subprocess
@@ -5,12 +7,18 @@ from datetime import datetime
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
 
-# Define conversation states
-SELECT_CHAIN, ENTER_AMOUNT, ENTER_WALLET = range(3)
+# Conversation states
+SELECT_CHAIN, ENTER_AMOUNT, ENTER_WALLET, CONFIRM_TRANSFER = range(4)
 
+# Static Configurations
+TON_TRANSFER_SCRIPT = os.path.abspath("./ton_bot_integration/current_ton_transfer.js")
+print(TON_TRANSFER_SCRIPT)
+load_dotenv()
+API_KEY = os.getenv("TON_API_KEY")
+ENDPOINT = "https://testnet.toncenter.com/api/v2/jsonRPC"
 
 # TON Node API details
-API_URL = "https://toncenter.com/api/v2"
+#API_URL = "https://toncenter.com/api/v2"
 
 # Admin user IDs (replace with actual Telegram user IDs)
 AUTHORIZED_ADMINS = [6465646323, 987654321]
@@ -45,40 +53,45 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(help_text)
 
 # /buy command entry point
-async def buy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    blockchain_options = [["TON", "ETH"], ["BSC", "TRON"], ["SUI"]]
-    reply_markup = ReplyKeyboardMarkup(blockchain_options, one_time_keyboard=True)
+async def buy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Starts the /buy flow and asks the user to select a blockchain."""
+    blockchain_options = [["TON", "SOL"], ["ETH"], ["BSC", "TRON"], ["SUI"]]
+    #reply_markup = ReplyKeyboardMarkup(blockchain_options, one_time_keyboard=True)
     await update.message.reply_text(
-        "Please select a blockchain network:", reply_markup=reply_markup
+        "Please select a blockchain network:",
+        reply_markup={"keyboard": blockchain_options, "resize_keyboard": True, "one_time_keyboard": True},
     )
     return SELECT_CHAIN
 
 # Handle blockchain selection
-async def select_blockchain(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def select_blockchain(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the selected blockchain and asks for the amount."""
     context.user_data['blockchain'] = update.message.text
     await update.message.reply_text(
-        f"You selected {update.message.text}. Now, please enter the amount of tokens you'd like to buy:",
+        f"You selected {update.message.text}.\nEnter the amount of tokens you want to buy:\nTo cancel the operation reply with '/cancel'",
         reply_markup=ReplyKeyboardRemove()
     )
     return ENTER_AMOUNT
 
 # Handle token amount with validation
-async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the amount and asks for the wallet address."""
     try:
         amount = float(update.message.text)
         if amount <= 0:
-            raise ValueError
+            raise ValueError("Amount must be greater than zero.")
         context.user_data['amount'] = amount
-        await update.message.reply_text("Great! Please enter your wallet address (Make sure the address is for the selected blockchain):")
+        await update.message.reply_text("Enter your wallet address to receive the tokens.\n(Make sure the address is for the selected blockchain):")
         return ENTER_WALLET
     except ValueError:
-        await update.message.reply_text("Please enter a valid positive number for the amount.")
+        await update.message.reply_text("Invalid amount. Please enter a valid number.")
         return ENTER_AMOUNT
 
 # Handle wallet address and transaction processing
-async def enter_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    wallet = update.message.text.strip()
-    if len(wallet) < 48:
+async def enter_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the wallet address and triggers the transfer."""
+    wallet_address = update.message.text.strip() # .strip() to be removed conditionally
+    if len(wallet_address) < 48:
         await update.message.reply_text("Invalid TON wallet address. Please try again:")
         return ENTER_WALLET
 
@@ -97,32 +110,44 @@ async def enter_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Amount: {amount}\n"
         f"Platform Fee ({fee_percentage}%): {fee_amount:.2f}\n"
         f"Total: {amount + fee_amount:.2f}\n"
-        f"Wallet Address: {wallet}\n\n"
+        f"Wallet Address: {wallet_address}\n\n"
         "Processing your transaction..."
     )
-    await asyncio.sleep(3)
-
-    # Testnet ******************************************************************
-
-    # Prepare the transaction
-    #sender_wallet = "EQBbwxC0WnOlXVwC5a8SEwd-_jtg3d3YCt0th_VA4IC9NkDS"     #"YOUR_TON_WALLET"  # Replace with your wallet address
-    sender_private_key = "38b162ae7af095971c65824e767e1d312402f02030d2e47df9551d055d21ca6006652d69d5b97c24627d58bcb69bc217beabbc7b04c58b7cdcbbbaaa296b9d94"   #"YOUR_PRIVATE_KEY"  # Replace with your private key
+ 
+    # Validate all inputs
+    if not all([TON_TRANSFER_SCRIPT, API_KEY, wallet_address, amount]):
+        await update.message.reply_text("Error: Missing required inputs for transaction.")
+        print("TON_TRANSFER_SCRIPT:", TON_TRANSFER_SCRIPT)
+        print("API_KEY:", API_KEY)
+        print("Recipient Wallet:", wallet_address)
+        print("Amount:", amount)
+        return ConversationHandler.END
     
-    # Call the TON.js script
+    # Call JavaScript Script
     try:
         result = subprocess.run(
-            ["node", "./ton_bot_integration/ton_transfer.js", sender_private_key, wallet, str(amount)],
+            [
+                "node",
+                TON_TRANSFER_SCRIPT,
+                "--apiKey", API_KEY,
+                "--endpoint", ENDPOINT,
+                "--mnemonics", "spend climb brother enjoy convince speed prosper sight ghost rapid purpose client decide retreat settle stock carpet lunar find exist exact must explain actor",
+                "--recipient", wallet_address,
+                "--amount", str(amount),
+            ],
             capture_output=True,
             text=True,
         )
-        if result.returncode == 0:
-            await update.message.reply_text("🎉 Transaction successful!")
-        else:
-            await update.message.reply_text(f"❌ Transaction failed: {result.stderr}")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
 
-    # /Testnet *****************************************************************
+        if result.returncode == 0:
+            await update.message.reply_text(f"Transaction successful:\n{result.stdout}")
+        else:
+            await update.message.reply_text(f"Transaction failed!:\n{result.stderr}")
+
+    except Exception as e:
+        await update.message.reply_text(f"An error occurred during the transaction:\n{str(e)}")
+
+
 
     # Admins notification
     if context.bot_data.get("notifications_enabled", True):
@@ -144,6 +169,13 @@ async def enter_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
     return ConversationHandler.END
+
+# To cancel the operation at any step
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Cancels the current operation."""
+    await update.message.reply_text("Transaction canceled.")
+    return ConversationHandler.END
+
 
 # /admin command
 @admin_only

@@ -5,7 +5,7 @@ from telegram import Update, BotCommand
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters
 from handlers import (
-    start, help_command, buy_command, select_blockchain, enter_amount, enter_wallet,
+    start, help_command, buy_command, select_blockchain, enter_amount, enter_wallet, cancel,
     admin_command, set_fee_command, process_set_fee, view_logs_command, clear_logs_command, export_logs_command, toggle_notifications_command,
     SELECT_CHAIN, ENTER_AMOUNT, ENTER_WALLET
 )
@@ -29,9 +29,10 @@ if __name__ == "__main__":
             ENTER_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_amount)],
             ENTER_WALLET: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_wallet)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("cancel", cancel)],
     )
     app.add_handler(buy_handler)
+    app.add_handler(CommandHandler("cancel", cancel))
 
     # Admin commands
     app.add_handler(CommandHandler("admin", admin_command))
