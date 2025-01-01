@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, Mess
 SELECT_CHAIN, ENTER_AMOUNT, ENTER_WALLET, CONFIRM_TRANSFER = range(4)
 
 # Static Configurations
-TON_TRANSFER_SCRIPT = os.path.abspath("./ton_bot_integration/current_ton_transfer.js")
+TON_TRANSFER_SCRIPT = os.path.abspath("./ton_bot_integration/latest_ton_transfer.js")
 print(TON_TRANSFER_SCRIPT)
 load_dotenv()
 API_KEY = os.getenv("TON_API_KEY")
