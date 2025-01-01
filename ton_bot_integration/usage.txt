@@ -1,0 +1,2 @@
+node ton_transfer.js --apiKey YOUR_API_KEY --endpoint https://testnet.toncenter.com/api/v2/jsonRPC \ --mnemonics "YOUR MNEMONICS" --recipient "RECIPIENT_ADDRESS" --amount "0.1" --retries 5 --delay 2000 --verbose
+
